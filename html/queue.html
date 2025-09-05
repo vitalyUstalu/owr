@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Waiting Room</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #f4f4f9;
+      color: #333;
+    }
+    h1 {
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+    .position {
+      font-size: 6em;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome! Your number in the queue:</h1>
+  <div class="position" id="queue-position">--</div>
+  <h1>Please wait...</h1>
+
+  <script>
+    function checkQueue() {
+      fetch("/wr_check", { credentials: "include" })
+        .then(res => {
+          if (res.redirected) {
+            window.location.href = res.url;
+            return;
+          }
+          return res.json();
+        })
+        .then(data => {
+          if (!data) return;
+          if (data.status === "waiting") {
+            const position = data.position || 0;
+            document.getElementById("queue-position").textContent = position;
+          }
+        })
+        .catch(err => {
+          document.getElementById("queue-position").textContent = "!!";
+        });
+    }
+    
+    // Initial check
+    checkQueue();
+    setInterval(checkQueue, 5000);
+  </script>
+    
+</body>
+</html>
