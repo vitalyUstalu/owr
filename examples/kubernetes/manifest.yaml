@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: waiting-room
+  labels:
+    app: waiting-room
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: waiting-room
+  template:
+    metadata:
+      labels:
+        app: waiting-room
+    spec:
+      containers:
+        - name: waiting-room
+          image: vitalyustalu/owr:0.0.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: WR_BACKEND_URL
+              value: "http://frontend.hipster-shop.svc.cluster.local:80"
+            - name: WR_MAX_ACTIVE
+              value: "1"
+            - name: WR_ACTIVE_TTL
+              value: "60"
+            - name: WR_REDIS_HOST
+              value: "redis-wr.hipster-shop.svc.cluster.local"
+            - name: WR_REDIS_PORT
+              value: "6379"
+          readinessProbe:
+            httpGet:
+              path: /wr_healthcheck
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /wr_healthcheck
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          volumeMounts:
+            - name: resolver-config
+              mountPath: /etc/nginx/conf.d
+              readOnly: true
+      volumes:
+        - name: resolver-config
+          configMap:
+            name: wr-nginx-resolver
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: waiting-room
+  labels:
+    app: waiting-room
+spec:
+  selector:
+    app: waiting-room
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wr-nginx-resolver
+data:
+  resolver.conf: |
+    resolver kube-dns.kube-system.svc.cluster.local valid=30s;
+    resolver_timeout 5s;
