@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: waiting-room
-          image: vitalyustalu/owr:0.0.1
+          image: ghcr.io/vitalyustalu/owr:v0.0.1
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
