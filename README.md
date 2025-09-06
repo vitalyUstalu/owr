@@ -8,7 +8,7 @@ When a user visits the site, they receive a unique `wr_token` (stored in a cooki
 - A background job moves users from the queue into active slots (`wr:released`) when space frees up.  
 - Active users refresh their position on every request, so they are only removed if inactive.  
 
-![Waiting Room Architecture](./owr.svg)
+![Waiting Room Architecture](./owr.png)
 
 ---
 
