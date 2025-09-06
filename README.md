@@ -5,8 +5,10 @@ When a user visits the site, they receive a unique `wr_token` (stored in a cooki
 
 - If there is space available (`wr:active`), the user is admitted immediately.  
 - If not, the user is placed in a queue (`wr:queue`) and shown their position.  
-- A background job moves users from the queue into active slots when space frees up.  
+- A background job moves users from the queue into active slots (`wr:released`) when space frees up.  
 - Active users refresh their position on every request, so they are only removed if inactive.  
+
+![Waiting Room Architecture](./owr.svg)
 
 ---
 
