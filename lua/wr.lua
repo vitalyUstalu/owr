@@ -3,7 +3,7 @@
 local redis = require "resty.redis"
 local uuid = require "resty.jit-uuid"
 
-uuid.seed()  
+uuid.seed()
 
 local _M = {}
 
@@ -11,6 +11,9 @@ local _M = {}
 _M.MAX_ACTIVE   = tonumber(os.getenv("WR_MAX_ACTIVE"))   or 100
 _M.ACTIVE_TTL   = tonumber(os.getenv("WR_ACTIVE_TTL"))   or 60
 _M.COOKIE_NAME  = os.getenv("WR_COOKIE_NAME") or "wr_token"
+_M.RELEASE_INTERVAL = tonumber(os.getenv("WR_RELEASE_INTERVAL")) or 2
+_M.LOCK_TTL = _M.RELEASE_INTERVAL + 5
+
 
 -- Redis settings
 _M.REDIS_HOST   = os.getenv("WR_REDIS_HOST")   or "127.0.0.1"
@@ -144,6 +147,15 @@ function _M.release_from_queue(premature)
         return
     end
 
+    -- Try to acquire lock
+    local lock_key = "wr:release_lock"
+    local ok, err = red:set(lock_key, "1", "EX", _M.LOCK_TTL, "NX")
+    if not ok or ok == ngx.null then
+        if err then ngx.log(ngx.ERR, "failed to acquire lock: ", err) end
+        _M.release_redis(red)
+        return
+    end
+
     local now = ngx.time()
 
     -- Remove inactive users
@@ -153,18 +165,21 @@ function _M.release_from_queue(premature)
     local active_count = red:zcount("wr:active", now - _M.ACTIVE_TTL, "+inf")
     local slots_available = _M.MAX_ACTIVE - active_count
     
-    for i = 1, slots_available do
-        local token = red:lpop("wr:queue")
-        if token == ngx.null then break end
-        red:sadd("wr:released", token)
+    if slots_available > 0 then
+        for i = 1, slots_available do
+            local token = red:lpop("wr:queue")
+            if token == ngx.null then break end
+            red:sadd("wr:released", token)
+        end
     end
     
-    
+    -- Release lock
+    red:del(lock_key)
 
     _M.release_redis(red)
 
     -- Reschedule
-    local ok, err = ngx.timer.at(2, _M.release_from_queue)
+    local ok, err = ngx.timer.at(_M.RELEASE_INTERVAL, _M.release_from_queue)
     if not ok then ngx.log(ngx.ERR, "failed to schedule: ", err) end
 end
 
