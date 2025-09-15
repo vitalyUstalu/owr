@@ -32,6 +32,7 @@ docker run -p 8080:8080 \
 | ---------------- | --------------------- | -------------------------------------------------------------------- |
 | `WR_MAX_ACTIVE`  | `100`                  | Maximum number of concurrent active users                            |
 | `WR_ACTIVE_TTL`  | `60`                  | TTL (in seconds) for an active user before being considered inactive |
+| `WR_RELEASE_INTERVAL` | `2`                   | Interval (in seconds) for the background job that releases users from the queue |
 | `WR_REDIS_HOST`  | `127.0.0.1`           | Redis hostname                                                       |
 | `WR_REDIS_PORT`  | `6379`                | Redis port                                                           |
 | `WR_REDIS_USER`  | *(empty)*             | Redis username (optional, if ACL enabled)                            |
